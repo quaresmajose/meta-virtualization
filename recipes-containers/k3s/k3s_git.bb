@@ -37,7 +37,6 @@ GO_BUILD_LDFLAGS = "-X github.com/rancher/k3s/pkg/version.Version=${PV} \
                     -X github.com/rancher/k3s/pkg/version.GitCommit=${@d.getVar('SRCREV_k3s', d, 1)[:8]} \
                     -w -s \
                    "
-BIN_PREFIX ?= "${exec_prefix}/local"
 
 inherit features_check
 REQUIRED_DISTRO_FEATURES ?= "seccomp"
@@ -634,20 +633,19 @@ do_compile() {
 }
 
 do_install() {
-        install -d "${D}${BIN_PREFIX}/bin"
-        install -m 755 "${S}/src/import/dist/artifacts/k3s" "${D}${BIN_PREFIX}/bin"
-        ln -sr "${D}/${BIN_PREFIX}/bin/k3s" "${D}${BIN_PREFIX}/bin/crictl"
+        install -d "${D}${bindir}"
+        install -m 755 "${S}/src/import/dist/artifacts/k3s" "${D}${bindir}"
+        ln -sr "${D}${bindir}/k3s" "${D}${bindir}/crictl"
         # We want to use the containerd provided ctr
-        # ln -sr "${D}/${BIN_PREFIX}/bin/k3s" "${D}${BIN_PREFIX}/bin/ctr"
-        ln -sr "${D}/${BIN_PREFIX}/bin/k3s" "${D}${BIN_PREFIX}/bin/kubectl"
-        install -m 755 "${WORKDIR}/k3s-clean" "${D}${BIN_PREFIX}/bin"
-        install -m 755 "${WORKDIR}/k3s-killall.sh" "${D}${BIN_PREFIX}/bin"
+        # ln -sr "${D}${bindir}/k3s" "${D}${bindir}/ctr"
+        ln -sr "${D}${bindir}/k3s" "${D}${bindir}/kubectl"
+        install -m 755 "${WORKDIR}/k3s-clean" "${D}${bindir}"
+        install -m 755 "${WORKDIR}/k3s-killall.sh" "${D}${bindir}"
 
         if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
                 install -D -m 0644 "${WORKDIR}/k3s.service" "${D}${systemd_system_unitdir}/k3s.service"
                 install -D -m 0644 "${WORKDIR}/k3s-agent.service" "${D}${systemd_system_unitdir}/k3s-agent.service"
-                sed -i "s#\(Exec\)\(.*\)=\(.*\)\(k3s\)#\1\2=${BIN_PREFIX}/bin/\4#g" "${D}${systemd_system_unitdir}/k3s.service" "${D}${systemd_system_unitdir}/k3s-agent.service"
-                install -m 755 "${WORKDIR}/k3s-agent" "${D}${BIN_PREFIX}/bin"
+                install -m 755 "${WORKDIR}/k3s-agent" "${D}${bindir}"
         fi
 }
 
@@ -658,8 +656,7 @@ SYSTEMD_SERVICE:${PN}-server = "${@bb.utils.contains('DISTRO_FEATURES','systemd'
 SYSTEMD_SERVICE:${PN}-agent = "${@bb.utils.contains('DISTRO_FEATURES','systemd','k3s-agent.service','',d)}"
 SYSTEMD_AUTO_ENABLE:${PN}-agent = "disable"
 
-FILES:${PN}-agent = "${BIN_PREFIX}/bin/k3s-agent"
-FILES:${PN} += "${BIN_PREFIX}/bin/*"
+FILES:${PN}-agent = "${bindir}/k3s-agent"
 
 RDEPENDS:${PN} = "k3s-cni conntrack-tools coreutils findutils iptables iproute2 ipset virtual-containerd"
 RDEPENDS:${PN}-server = "${PN}"
