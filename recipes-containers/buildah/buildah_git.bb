@@ -40,9 +40,15 @@ do_compile:prepend() {
 go_do_compile() {
         export TMPDIR="${GOTMPDIR}"
         if [ -n "${GO_INSTALL}" ]; then
-                ${GO} install ${GOBUILDFLAGS} ./cmd/buildah
-                ${GO} install ${GOBUILDFLAGS} ./tests/imgtype/imgtype.go
-                ${GO} install ${GOBUILDFLAGS} ./tests/copy/copy.go
+                if [ -n "${GO_LINKSHARED}" ]; then
+                        ${GO} install ${GOBUILDFLAGS} ./cmd/buildah
+                        ${GO} install ${GOBUILDFLAGS} ./tests/imgtype/imgtype.go
+                        ${GO} install ${GOBUILDFLAGS} ./tests/copy/copy.go
+                        rm -rf ${B}/bin
+                fi
+                ${GO} install ${GO_LINKSHARED} ${GOBUILDFLAGS} ./cmd/buildah
+                ${GO} install ${GO_LINKSHARED} ${GOBUILDFLAGS} ./tests/imgtype/imgtype.go
+                ${GO} install ${GO_LINKSHARED} ${GOBUILDFLAGS} ./tests/copy/copy.go
         fi
 }
 
